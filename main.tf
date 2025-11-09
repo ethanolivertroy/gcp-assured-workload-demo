@@ -298,148 +298,158 @@ resource "google_service_account" "overprivileged_sa" {
 # The default log bucket already exists with 30-day retention (violation demonstrated)
 
 # ============================================================================
-# VIOLATION #10: llama.cpp Deployment - Public LoadBalancer, No Auth, No mTLS
+# VIOLATION #8: llama.cpp Deployment - Public LoadBalancer, No Auth, No mTLS
 # NIST SC-8 (Transmission Confidentiality), AC-2 (Account Management)
 # ============================================================================
 
-# Note: This would normally be in a separate kubernetes manifest, but showing
-# as null_resource with kubectl apply to demonstrate the deployment pattern
+# Note: llama.cpp deployment commented out due to Cloud Build image limitations
+# The Terraform hashicorp/terraform image doesn't include gcloud/kubectl/curl
+# Deploy manually or via separate Cloud Build step with google/cloud-sdk image
+#
+# The infrastructure violations are still demonstrated through:
+# - Public GKE cluster (SC-7 violation)
+# - Public LoadBalancer service type would be used
+# - No Binary Authorization, Workload Identity, or mTLS
+#
+# To deploy manually after terraform apply:
+#   gcloud container clusters get-credentials non-compliant-cluster --zone=us-central1-a
+#   kubectl apply -f kubernetes/llama-deployment.yaml
 
-resource "null_resource" "deploy_llama_non_compliant" {
-  provisioner "local-exec" {
-    command = <<-EOT
-      gcloud container clusters get-credentials ${google_container_cluster.non_compliant_cluster.name} \
-        --zone=${var.zone} \
-        --project=${var.project_id}
-
-      kubectl create namespace llama-demo --dry-run=client -o yaml | kubectl apply -f -
-
-      # Upload a small model to the public bucket (for demo)
-      echo "Downloading TinyLlama model..."
-      curl -L -o tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf \
-        "https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf" || true
-
-      if [ -f tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf ]; then
-        gsutil cp tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf gs://${google_storage_bucket.model_storage.name}/models/
-      fi
-
-      # Deploy llama.cpp with all security violations
-      kubectl apply -f - <<EOF
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: llama-config
-  namespace: llama-demo
-data:
-  # VIOLATION: Sensitive config in ConfigMap (not encrypted)
-  # NIST SC-28: Requires encryption at rest
-  db_connection: "${google_sql_database_instance.demo_db.connection_name}"
-  db_password: "${var.db_password}"
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: llama-server
-  namespace: llama-demo
-  labels:
-    app: llama-server
-    compliance: non-compliant
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: llama-server
-  template:
-    metadata:
-      labels:
-        app: llama-server
-    spec:
-      # VIOLATION: No service account specified (uses default)
-      # NIST AC-6: Requires least privilege
-
-      # VIOLATION: No security context
-      # NIST AC-6: Requires access controls
-
-      initContainers:
-      - name: download-model
-        image: google/cloud-sdk:slim
-        command:
-          - gsutil
-          - cp
-          - gs://${google_storage_bucket.model_storage.name}/models/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf
-          - /models/model.gguf
-        volumeMounts:
-        - name: models
-          mountPath: /models
-
-      containers:
-      - name: llama-server
-        image: ghcr.io/ggml-org/llama.cpp:server
-        args:
-          - "-m"
-          - "/models/model.gguf"
-          - "--host"
-          - "0.0.0.0"
-          - "--port"
-          - "8080"
-          # VIOLATION: No --api-key flag (unauthenticated)
-          # NIST AC-2, IA-2: Requires identification and authentication
-        ports:
-        - containerPort: 8080
-          name: http
-          protocol: TCP
-        volumeMounts:
-        - name: models
-          mountPath: /models
-        env:
-        - name: DB_PASSWORD
-          valueFrom:
-            configMapKeyRef:
-              name: llama-config
-              key: db_password
-        resources:
-          requests:
-            memory: "4Gi"
-            cpu: "2"
-          limits:
-            memory: "8Gi"
-            cpu: "4"
-      volumes:
-      - name: models
-        emptyDir:
-          sizeLimit: 5Gi
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: llama-server
-  namespace: llama-demo
-  labels:
-    app: llama-server
-spec:
-  # VIOLATION: Public LoadBalancer (exposed to internet)
-  # NIST SC-7: Requires boundary protection
-  type: LoadBalancer
-  ports:
-  - port: 80
-    targetPort: 8080
-    protocol: TCP
-    name: http
-  selector:
-    app: llama-server
-EOF
-
-      echo "Waiting for LoadBalancer IP..."
-      kubectl wait --for=condition=ready pod -l app=llama-server -n llama-demo --timeout=300s || true
-      kubectl get svc llama-server -n llama-demo
-    EOT
-  }
-
-  depends_on = [
-    google_container_node_pool.non_compliant_nodes,
-    google_storage_bucket.model_storage
-  ]
-}
+# resource "null_resource" "deploy_llama_non_compliant" {
+#   provisioner "local-exec" {
+#     command = <<-EOT
+#       gcloud container clusters get-credentials ${google_container_cluster.non_compliant_cluster.name} \
+#         --zone=${var.zone} \
+#         --project=${var.project_id}
+#
+#       kubectl create namespace llama-demo --dry-run=client -o yaml | kubectl apply -f -
+#
+#       # Upload a small model to the public bucket (for demo)
+#       echo "Downloading TinyLlama model..."
+#       curl -L -o tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf \
+#         "https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf" || true
+#
+#       if [ -f tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf ]; then
+#         gsutil cp tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf gs://${google_storage_bucket.model_storage.name}/models/
+#       fi
+#
+#       # Deploy llama.cpp with all security violations
+#       kubectl apply -f - <<EOF
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: llama-config
+#   namespace: llama-demo
+# data:
+#   # VIOLATION: Sensitive config in ConfigMap (not encrypted)
+#   # NIST SC-28: Requires encryption at rest
+#   db_connection: "${google_sql_database_instance.demo_db.connection_name}"
+#   db_password: "${var.db_password}"
+# ---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: llama-server
+#   namespace: llama-demo
+#   labels:
+#     app: llama-server
+#     compliance: non-compliant
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: llama-server
+#   template:
+#     metadata:
+#       labels:
+#         app: llama-server
+#     spec:
+#       # VIOLATION: No service account specified (uses default)
+#       # NIST AC-6: Requires least privilege
+#
+#       # VIOLATION: No security context
+#       # NIST AC-6: Requires access controls
+#
+#       initContainers:
+#       - name: download-model
+#         image: google/cloud-sdk:slim
+#         command:
+#           - gsutil
+#           - cp
+#           - gs://${google_storage_bucket.model_storage.name}/models/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf
+#           - /models/model.gguf
+#         volumeMounts:
+#         - name: models
+#           mountPath: /models
+#
+#       containers:
+#       - name: llama-server
+#         image: ghcr.io/ggml-org/llama.cpp:server
+#         args:
+#           - "-m"
+#           - "/models/model.gguf"
+#           - "--host"
+#           - "0.0.0.0"
+#           - "--port"
+#           - "8080"
+#           # VIOLATION: No --api-key flag (unauthenticated)
+#           # NIST AC-2, IA-2: Requires identification and authentication
+#         ports:
+#         - containerPort: 8080
+#           name: http
+#           protocol: TCP
+#         volumeMounts:
+#         - name: models
+#           mountPath: /models
+#         env:
+#         - name: DB_PASSWORD
+#           valueFrom:
+#             configMapKeyRef:
+#               name: llama-config
+#               key: db_password
+#         resources:
+#           requests:
+#             memory: "4Gi"
+#             cpu: "2"
+#           limits:
+#             memory: "8Gi"
+#             cpu: "4"
+#       volumes:
+#       - name: models
+#         emptyDir:
+#           sizeLimit: 5Gi
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: llama-server
+#   namespace: llama-demo
+#   labels:
+#     app: llama-server
+# spec:
+#   # VIOLATION: Public LoadBalancer (exposed to internet)
+#   # NIST SC-7: Requires boundary protection
+#   type: LoadBalancer
+#   ports:
+#   - port: 80
+#     targetPort: 8080
+#     protocol: TCP
+#     name: http
+#   selector:
+#     app: llama-server
+# EOF
+#
+#       echo "Waiting for LoadBalancer IP..."
+#       kubectl wait --for=condition=ready pod -l app=llama-server -n llama-demo --timeout=300s || true
+#       kubectl get svc llama-server -n llama-demo
+#     EOT
+#   }
+#
+#   depends_on = [
+#     google_container_node_pool.non_compliant_nodes,
+#     google_storage_bucket.model_storage
+#   ]
+# }
 
 # ============================================================================
 # SUMMARY OF VIOLATIONS (This Commit)
