@@ -10,10 +10,6 @@ terraform {
       version = "~> 5.40"
     }
   }
-  backend "gcs" {
-    bucket = "tfstate-real-slim-shady-fedramp-high"
-    prefix = "terraform/state"
-  }
 }
 
 provider "google" {
