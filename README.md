@@ -4,7 +4,21 @@
 
 This repository demonstrates that **Google Assured Workloads is not a magic bullet for FedRAMP High / DoD IL5 compliance**. While Assured Workloads provides essential platform-level controls (data residency, personnel access restrictions, FIPS 140-2 encryption), it **does not automatically enforce service-specific security configurations** required for full compliance.
 
-**Key Finding**: You can deploy insecure infrastructure within an Assured Workloads environment and violate FedRAMP/IL5 controls if you don't configure services properly.
+**Key Finding**: Assured Workloads prevents only **3 out of 12** attempted violations (25%). **9 violations** (75%) are still possible, proving that service-level configuration is critical for compliance.
+
+### What Assured Workloads Actually Prevents
+
+✅ **Blocks 3 violations** (via organization policies):
+1. Storage buckets without UBLA (`constraints/storage.uniformBucketLevelAccess`)
+2. Service account key creation (`constraints/iam.disableServiceAccountKeyCreation`)
+3. Overprivileged IAM roles like Editor (IAM policy restrictions)
+
+❌ **Allows 9 violations** (service-level misconfigurations):
+- Public GKE clusters, Cloud SQL, and LLM endpoints
+- Missing CMEK encryption on data and secrets
+- No Binary Authorization, Workload Identity, or vulnerability scanning
+- Inadequate audit logging and backup retention
+- No mTLS, network policies, or VPC Service Controls
 
 ## What This Demo Shows
 

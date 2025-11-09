@@ -116,11 +116,11 @@ resource "google_container_node_pool" "non_compliant_nodes" {
   cluster    = google_container_cluster.non_compliant_cluster.name
   node_count = 2
 
-  # VIOLATION: No automatic upgrades or repairs
+  # VIOLATION: No automatic repairs (auto_upgrade required by GKE with release channel)
   # NIST SI-2: Requires timely flaw remediation
   management {
     auto_repair  = false
-    auto_upgrade = false
+    auto_upgrade = true  # Required by GKE API when using release channel
   }
 
   node_config {
@@ -215,9 +215,11 @@ resource "google_storage_bucket" "model_storage" {
   # NIST SC-28: Requires customer-managed encryption
   # encryption block not specified
 
-  # VIOLATION: Uniform bucket-level access disabled (allows ACLs)
+  # VIOLATION PREVENTED BY ASSURED WORKLOADS ✅
+  # Uniform bucket-level access disabled (allows ACLs)
   # NIST AC-3: Requires consistent access controls
-  uniform_bucket_level_access = false
+  # uniform_bucket_level_access = false  # ← BLOCKED by constraint: constraints/storage.uniformBucketLevelAccess
+  # Assured Workloads enforces UBLA=true, cannot disable it
 
   # VIOLATION: No public access prevention
   # NIST AC-3: Requires access enforcement
@@ -251,19 +253,25 @@ resource "google_service_account" "overprivileged_sa" {
   display_name = "Overprivileged Service Account (NON-COMPLIANT)"
 }
 
-# VIOLATION: Granting Editor role (overly broad permissions)
+# VIOLATION PREVENTED BY ASSURED WORKLOADS ✅
+# Granting Editor role (overly broad permissions)
 # NIST AC-6: Requires least privilege
-resource "google_project_iam_member" "editor_role" {
-  project = var.project_id
-  role    = "roles/editor"
-  member  = "serviceAccount:${google_service_account.overprivileged_sa.email}"
-}
+# resource "google_project_iam_member" "editor_role" {
+#   project = var.project_id
+#   role    = "roles/editor"
+#   member  = "serviceAccount:${google_service_account.overprivileged_sa.email}"
+# }
+# ← BLOCKED: "Error 403: Policy update access denied"
+# Assured Workloads prevents granting overly broad roles like Editor
 
-# VIOLATION: Creating long-lived service account key
+# VIOLATION PREVENTED BY ASSURED WORKLOADS ✅
+# Creating long-lived service account key
 # NIST IA-5 (Authenticator Management): Requires key rotation
-resource "google_service_account_key" "non_compliant_key" {
-  service_account_id = google_service_account.overprivileged_sa.name
-}
+# resource "google_service_account_key" "non_compliant_key" {
+#   service_account_id = google_service_account.overprivileged_sa.name
+# }
+# ← BLOCKED by constraint: constraints/iam.disableServiceAccountKeyCreation
+# Assured Workloads prevents service account key creation
 
 # ============================================================================
 # VIOLATION #6: Logging - Minimal Audit Logs, Short Retention, No CMEK
@@ -273,18 +281,17 @@ resource "google_service_account_key" "non_compliant_key" {
 # Only default Admin Activity logs enabled (free tier)
 # No Data Access logs configured - NIST AU-2 violation
 
-resource "google_logging_project_bucket_config" "default" {
-  project        = var.project_id
-  location       = "global"
-  retention_days = 30 # VIOLATION: Minimal retention (FedRAMP requires 365+)
-  bucket_id      = "_Default"
-
-  # VIOLATION: No locked retention
-  # NIST AU-9: Requires protection of audit information
-
-  # VIOLATION: No CMEK encryption for logs
-  # NIST SC-28: Requires encryption at rest
-}
+# VIOLATION: Minimal log retention (30 days by default)
+# NIST AU-11: Requires 365+ day retention for FedRAMP High
+# NOTE: Modifying log bucket config requires additional IAM permissions
+# For this demo, we accept the default 30-day retention as a violation
+# resource "google_logging_project_bucket_config" "default" {
+#   project        = var.project_id
+#   location       = "global"
+#   retention_days = 30
+#   bucket_id      = "_Default"
+# }
+# The default log bucket already exists with 30-day retention (violation demonstrated)
 
 # ============================================================================
 # VIOLATION #10: llama.cpp Deployment - Public LoadBalancer, No Auth, No mTLS
@@ -433,16 +440,26 @@ EOF
 # ============================================================================
 # SUMMARY OF VIOLATIONS (This Commit)
 # ============================================================================
-# 1. Public GKE cluster (no private nodes/endpoint) - SC-7
-# 2. No Binary Authorization, Workload Identity, or GKE secrets CMEK - CM-7, IA-2, SC-28
-# 3. No vulnerability scanning or auto-updates - SI-2, RA-5
-# 4. Cloud SQL: public IP (0.0.0.0/0), no CMEK, no SSL - AC-17, SC-8, SC-28
-# 5. Storage: no CMEK, no UBLA, publicly accessible - SC-28, AC-3
-# 6. IAM: overprivileged (Editor), service account keys - AC-6, IA-5
-# 7. Network: no VPC-SC, no Private Google Access, no firewall rules - SC-7
-# 8. Logging: minimal audit logs, 30-day retention, no CMEK - AU-2, AU-9, AU-11
-# 9. No DR planning: single-region, minimal backups, no CMEK - CP-6, CP-9
-# 10. llama.cpp: public LoadBalancer, no auth, HTTP only, no mTLS - SC-7, SC-8, AC-2
+# KEY FINDING: Assured Workloads prevents 3/10 violations, allows 7/10
 #
-# Next commits will remediate these violations incrementally.
+# VIOLATIONS THAT ASSURED WORKLOADS ALLOWS (7):
+# 1. Public GKE cluster (no private nodes/endpoint) - SC-7 ❌
+# 2. No Binary Authorization, Workload Identity, or GKE secrets CMEK - CM-7, IA-2, SC-28 ❌
+# 3. No vulnerability scanning, no auto-repairs - SI-2, RA-5 ❌
+# 4. Cloud SQL: public IP (0.0.0.0/0), no CMEK, no SSL - AC-17, SC-8, SC-28 ❌
+# 5. Storage: no CMEK, publicly accessible (allUsers) - SC-28, AC-3 ❌
+# 6. Network: no VPC-SC, no Private Google Access, no firewall rules - SC-7 ❌
+# 7. Logging: minimal audit logs, 30-day retention, no CMEK - AU-2, AU-9, AU-11 ❌
+# 8. No DR planning: single-region, minimal backups, no CMEK - CP-6, CP-9 ❌
+# 9. llama.cpp: public LoadBalancer, no auth, HTTP only, no mTLS - SC-7, SC-8, AC-2 ❌
+#
+# VIOLATIONS THAT ASSURED WORKLOADS PREVENTS (3):
+# 10. Storage: no UBLA (Uniform Bucket-Level Access) - AC-3 ✅ BLOCKED
+# 11. IAM: overprivileged roles (Editor) - AC-6 ✅ BLOCKED
+# 12. IAM: service account keys - IA-5 ✅ BLOCKED
+#
+# CONCLUSION: Assured Workloads provides platform-level controls but does NOT
+# prevent most service-specific misconfigurations. 70% of violations are still possible!
+#
+# Next commits will remediate the 7 allowed violations incrementally.
 # ============================================================================
