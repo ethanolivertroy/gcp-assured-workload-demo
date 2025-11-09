@@ -55,3 +55,7 @@ Thumbs.db
 
 # Plan files (optional, uncomment if you don't want to commit plans)
 # *.tfplan
+
+# Local files (not committed)
+blog.md
+check-violations.sh
