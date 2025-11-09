@@ -220,6 +220,7 @@ resource "google_storage_bucket" "model_storage" {
   # NIST AC-3: Requires consistent access controls
   # uniform_bucket_level_access = false  # ← BLOCKED by constraint: constraints/storage.uniformBucketLevelAccess
   # Assured Workloads enforces UBLA=true, cannot disable it
+  uniform_bucket_level_access = true  # Required by Assured Workloads
 
   # VIOLATION: No public access prevention
   # NIST AC-3: Requires access enforcement
