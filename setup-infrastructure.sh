@@ -98,9 +98,13 @@ if gcloud secrets describe "$SECRET_NAME" --project="$PROJECT_ID" 2>/dev/null; t
         --project="$PROJECT_ID" \
         --data-file=-
 else
+    # Changed replication-policy to "user-managed"
+    # Added --locations="$REGION" to comply with Assured Workloads policy
+    print_info "Creating new secret in compliant region: $REGION"
     echo -n "$SECRET_VALUE" | gcloud secrets create "$SECRET_NAME" \
         --project="$PROJECT_ID" \
-        --replication-policy="automatic" \
+        --replication-policy="user-managed" \
+        --locations="$REGION" \
         --data-file=-
     print_info "Secret created successfully"
 fi
@@ -146,13 +150,16 @@ fi
 
 # Grant permissions to the custom service account
 print_info "Granting permissions to custom service account..."
+# Grant access to the secret
 gcloud secrets add-iam-policy-binding "$SECRET_NAME" \
     --project="$PROJECT_ID" \
     --member="serviceAccount:${CUSTOM_SA_EMAIL}" \
     --role="roles/secretmanager.secretAccessor"
 
+# Grant access to the GCS bucket
 gsutil iam ch "serviceAccount:${CUSTOM_SA_EMAIL}:roles/storage.objectAdmin" "gs://${BUCKET_NAME}"
 
+# Grant access to manage project resources
 gcloud projects add-iam-policy-binding "$PROJECT_ID" \
     --member="serviceAccount:${CUSTOM_SA_EMAIL}" \
     --role="roles/editor" \
