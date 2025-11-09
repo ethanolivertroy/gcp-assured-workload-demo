@@ -1,0 +1,71 @@
+steps:
+  # Step 1: Retrieve the secret from Secret Manager
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'retrieve-secret'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud secrets versions access latest --secret=terraform-db-password > /workspace/db_password.txt
+        echo "Secret retrieved successfully"
+
+  # Step 2: Terraform Init
+  - name: 'hashicorp/terraform:latest'
+    id: 'terraform-init'
+    args:
+      - 'init'
+    env:
+      - 'TF_IN_AUTOMATION=true'
+
+  # Step 3: Terraform Validate
+  - name: 'hashicorp/terraform:latest'
+    id: 'terraform-validate'
+    args:
+      - 'validate'
+    env:
+      - 'TF_IN_AUTOMATION=true'
+
+  # Step 4: Terraform Plan
+  - name: 'hashicorp/terraform:latest'
+    id: 'terraform-plan'
+    args:
+      - 'plan'
+      - '-out=tfplan'
+      - '-var=db_password=$${DB_PASSWORD}'
+    secretEnv: ['DB_PASSWORD']
+    env:
+      - 'TF_IN_AUTOMATION=true'
+
+  # Step 5: Terraform Apply (only on main branch)
+  - name: 'hashicorp/terraform:latest'
+    id: 'terraform-apply'
+    args:
+      - 'apply'
+      - '-auto-approve'
+      - 'tfplan'
+    secretEnv: ['DB_PASSWORD']
+    env:
+      - 'TF_IN_AUTOMATION=true'
+
+# Make the secret available to the build steps
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/terraform-db-password/versions/latest
+      env: 'DB_PASSWORD'
+
+# Service account with necessary permissions
+# serviceAccount: 'projects/PROJECT_ID/serviceAccounts/cloud-build-sa@PROJECT_ID.iam.gserviceaccount.com'
+
+# Timeout for the entire build
+timeout: '1800s'
+
+# Options for the build
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'N1_HIGHCPU_8'
+  
+# Optionally save the plan as an artifact
+# artifacts:
+#   objects:
+#     location: 'gs://YOUR_BUCKET_NAME/builds/$BUILD_ID'
+#     paths: ['tfplan']

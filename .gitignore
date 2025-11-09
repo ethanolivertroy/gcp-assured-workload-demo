@@ -1,0 +1,57 @@
+# Terraform state files
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Terraform variable files
+*.tfvars
+*.tfvars.json
+
+# Terraform directory
+.terraform/
+.terraform.lock.hcl
+
+# Crash log files
+crash.log
+crash.*.log
+
+# Override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Sensitive data files
+terraform.rc
+.terraformrc
+
+# CLI configuration files
+.terraform.d/
+
+# Backup files
+*.bak
+
+# Exclude secret files
+secrets/
+*.secret
+*.key
+*.pem
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Plan files (optional, uncomment if you don't want to commit plans)
+# *.tfplan
