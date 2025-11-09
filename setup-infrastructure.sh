@@ -98,8 +98,7 @@ if gcloud secrets describe "$SECRET_NAME" --project="$PROJECT_ID" 2>/dev/null; t
         --project="$PROJECT_ID" \
         --data-file=-
 else
-    # Changed replication-policy to "user-managed"
-    # Added --locations="$REGION" to comply with Assured Workloads policy
+    # Use user-managed replication and specify a location to comply with Assured Workloads.
     print_info "Creating new secret in compliant region: $REGION"
     echo -n "$SECRET_VALUE" | gcloud secrets create "$SECRET_NAME" \
         --project="$PROJECT_ID" \
@@ -146,6 +145,10 @@ else
         --description="Service account for Cloud Build Terraform deployments" \
         --display-name="Cloud Build Terraform SA"
     print_info "Custom service account created: $CUSTOM_SA_EMAIL"
+    
+    # Add a short pause to allow the new service account to propagate through IAM systems
+    print_info "Waiting 10 seconds for service account to propagate..."
+    sleep 10
 fi
 
 # Grant permissions to the custom service account
