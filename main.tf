@@ -236,13 +236,16 @@ resource "google_storage_bucket" "model_storage" {
   # NIST AU-11: Requires audit record retention
 }
 
-# VIOLATION: Making model bucket publicly accessible
+# VIOLATION PREVENTED BY ASSURED WORKLOADS ✅
+# Attempted to make bucket publicly accessible via allUsers
 # NIST AC-3: Violates access enforcement requirements
-resource "google_storage_bucket_iam_member" "public_models" {
-  bucket = google_storage_bucket.model_storage.name
-  role   = "roles/storage.objectViewer"
-  member = "allUsers"
-}
+# resource "google_storage_bucket_iam_member" "public_models" {
+#   bucket = google_storage_bucket.model_storage.name
+#   role   = "roles/storage.objectViewer"
+#   member = "allUsers"
+# }
+# ← BLOCKED: "Error 412: One or more users named in the policy do not belong to a permitted customer"
+# Assured Workloads prevents granting public access via IAM bindings (allUsers, allAuthenticatedUsers)
 
 # ============================================================================
 # VIOLATION #5: IAM - Overprivileged Service Account
@@ -434,33 +437,33 @@ EOF
 
   depends_on = [
     google_container_node_pool.non_compliant_nodes,
-    google_storage_bucket_iam_member.public_models
+    google_storage_bucket.model_storage
   ]
 }
 
 # ============================================================================
 # SUMMARY OF VIOLATIONS (This Commit)
 # ============================================================================
-# KEY FINDING: Assured Workloads prevents 3/10 violations, allows 7/10
+# KEY FINDING: Assured Workloads prevents 4/12 violations (33%), allows 8/12 (67%)
 #
-# VIOLATIONS THAT ASSURED WORKLOADS ALLOWS (7):
+# VIOLATIONS THAT ASSURED WORKLOADS ALLOWS (8):
 # 1. Public GKE cluster (no private nodes/endpoint) - SC-7 ❌
 # 2. No Binary Authorization, Workload Identity, or GKE secrets CMEK - CM-7, IA-2, SC-28 ❌
 # 3. No vulnerability scanning, no auto-repairs - SI-2, RA-5 ❌
 # 4. Cloud SQL: public IP (0.0.0.0/0), no CMEK, no SSL - AC-17, SC-8, SC-28 ❌
-# 5. Storage: no CMEK, publicly accessible (allUsers) - SC-28, AC-3 ❌
+# 5. Storage: no CMEK - SC-28 ❌
 # 6. Network: no VPC-SC, no Private Google Access, no firewall rules - SC-7 ❌
 # 7. Logging: minimal audit logs, 30-day retention, no CMEK - AU-2, AU-9, AU-11 ❌
-# 8. No DR planning: single-region, minimal backups, no CMEK - CP-6, CP-9 ❌
-# 9. llama.cpp: public LoadBalancer, no auth, HTTP only, no mTLS - SC-7, SC-8, AC-2 ❌
+# 8. llama.cpp: public LoadBalancer, no auth, HTTP only, no mTLS - SC-7, SC-8, AC-2 ❌
 #
-# VIOLATIONS THAT ASSURED WORKLOADS PREVENTS (3):
-# 10. Storage: no UBLA (Uniform Bucket-Level Access) - AC-3 ✅ BLOCKED
+# VIOLATIONS THAT ASSURED WORKLOADS PREVENTS (4):
+# 9. Storage: no UBLA (Uniform Bucket-Level Access) - AC-3 ✅ BLOCKED
+# 10. Storage: public access via IAM (allUsers) - AC-3 ✅ BLOCKED
 # 11. IAM: overprivileged roles (Editor) - AC-6 ✅ BLOCKED
 # 12. IAM: service account keys - IA-5 ✅ BLOCKED
 #
 # CONCLUSION: Assured Workloads provides platform-level controls but does NOT
-# prevent most service-specific misconfigurations. 70% of violations are still possible!
+# prevent most service-specific misconfigurations. 67% of violations are still possible!
 #
-# Next commits will remediate the 7 allowed violations incrementally.
+# Next commits will remediate the 8 allowed violations incrementally.
 # ============================================================================

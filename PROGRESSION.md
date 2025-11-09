@@ -2,7 +2,7 @@
 
 This document tracks the incremental remediation of **12 attempted security violations** across 9 commits.
 
-**Key Finding**: Assured Workloads prevented **3 violations** (25%) via organization policies, but allowed **9 violations** (75%) to deploy successfully.
+**Key Finding**: Assured Workloads prevented **4 violations** (33%) via organization policies, but allowed **8 violations** (67%) to deploy successfully.
 
 ## Violations Prevented by Assured Workloads
 
@@ -10,7 +10,8 @@ Assured Workloads automatically blocked these violations before deployment:
 
 | # | Violation | NIST Controls | Organization Policy Constraint |
 |---|-----------|---------------|-------------------------------|
-| 10 | Storage without UBLA | AC-3 | `constraints/storage.uniformBucketLevelAccess` |
+| 9 | Storage without UBLA | AC-3 | `constraints/storage.uniformBucketLevelAccess` |
+| 10 | Public bucket access (allUsers IAM) | AC-3 | Customer domain restrictions (412 error) |
 | 11 | Service account key creation | IA-5 | `constraints/iam.disableServiceAccountKeyCreation` |
 | 12 | Editor/Owner role assignment | AC-6 | IAM policy restrictions (403 errors) |
 
@@ -20,21 +21,21 @@ These violations **could not be deployed** and are marked as ✅ **PREVENTED** i
 
 | Commit | Description | Violations Fixed | Violations Remaining | AW Prevented |
 |--------|-------------|------------------|---------------------|--------------|
-| **Commit 1** | Non-compliant baseline | 0 | 9 | 3 |
-| **Commit 2** | GKE compute security | 3 | 6 | 3 |
-| **Commit 3** | Data encryption (CMEK) | 2 | 4 | 3 |
-| **Commit 4** | IAM and networking | 2 | 2 | 3 |
-| **Commit 5** | Audit logging | 1 | 1 | 3 |
-| **Commit 6** | Vulnerability management | 1 | 0 | 3 |
-| **Commit 7** | DR and backup | 0 | 0 | 3 |
-| **Commit 8** | Service mesh and mTLS | 0 | 0 | 3 |
-| **Commit 9** | Testing documentation | 0 | 0 | 3 |
+| **Commit 1** | Non-compliant baseline | 0 | 8 | 4 |
+| **Commit 2** | GKE compute security | 3 | 5 | 4 |
+| **Commit 3** | Data encryption (CMEK) | 1 | 4 | 4 |
+| **Commit 4** | IAM and networking | 2 | 2 | 4 |
+| **Commit 5** | Audit logging | 1 | 1 | 4 |
+| **Commit 6** | Vulnerability management | 1 | 0 | 4 |
+| **Commit 7** | DR and backup | 0 | 0 | 4 |
+| **Commit 8** | Service mesh and mTLS | 0 | 0 | 4 |
+| **Commit 9** | Testing documentation | 0 | 0 | 4 |
 
 ---
 
 ## Violation Tracking Matrix
 
-### Service-Level Violations (9) - Allowed by Assured Workloads
+### Service-Level Violations (8) - Allowed by Assured Workloads
 
 | # | Violation | NIST Controls | Commit 1 | Commit 2 | Commit 3 | Commit 4 | Commit 5 | Commit 6 | Commit 7 | Commit 8 |
 |---|-----------|---------------|----------|----------|----------|----------|----------|----------|----------|----------|
@@ -42,17 +43,17 @@ These violations **could not be deployed** and are marked as ✅ **PREVENTED** i
 | 2 | No Binary Auth/Workload Identity | CM-7, IA-2, AC-6 | 🔴 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 |
 | 3 | No GKE secrets CMEK | SC-28, SC-12 | 🔴 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 |
 | 4 | Cloud SQL public/no CMEK | AC-17, SC-8, SC-28 | 🔴 | 🔴 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 |
-| 5 | Storage public/no CMEK | AC-3, SC-28 | 🔴 | 🔴 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 |
-| 6 | Using default SA (not WI) | AC-6 | 🔴 | 🔴 | 🔴 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 |
-| 7 | Missing network controls | SC-7, SC-7(5) | 🔴 | 🔴 | 🔴 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 |
-| 8 | Minimal audit logging | AU-2, AU-9, AU-11 | 🔴 | 🔴 | 🔴 | 🔴 | 🟢 | 🟢 | 🟢 | 🟢 |
-| 9 | No vulnerability mgmt | SI-2, RA-5 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🟢 | 🟢 | 🟢 |
+| 5 | Storage no CMEK | SC-28 | 🔴 | 🔴 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 |
+| 6 | Missing network controls | SC-7, SC-7(5) | 🔴 | 🔴 | 🔴 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 |
+| 7 | Minimal audit logging | AU-2, AU-9, AU-11 | 🔴 | 🔴 | 🔴 | 🔴 | 🟢 | 🟢 | 🟢 | 🟢 |
+| 8 | No vulnerability mgmt | SI-2, RA-5 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🟢 | 🟢 | 🟢 |
 
-### Platform-Level Violations (3) - PREVENTED by Assured Workloads
+### Platform-Level Violations (4) - PREVENTED by Assured Workloads
 
 | # | Violation | NIST Controls | Status |
 |---|-----------|---------------|--------|
-| 10 | Storage without UBLA | AC-3 | ✅ **PREVENTED** by `constraints/storage.uniformBucketLevelAccess` |
+| 9 | Storage without UBLA | AC-3 | ✅ **PREVENTED** by `constraints/storage.uniformBucketLevelAccess` |
+| 10 | Public bucket IAM (allUsers) | AC-3 | ✅ **PREVENTED** by customer domain restrictions (Error 412) |
 | 11 | Service account key creation | IA-5 | ✅ **PREVENTED** by `constraints/iam.disableServiceAccountKeyCreation` |
 | 12 | Overprivileged Editor role | AC-6 | ✅ **PREVENTED** by IAM policy restrictions (Error 403) |
 
@@ -107,15 +108,15 @@ These violations **could not be deployed** and are marked as ✅ **PREVENTED** i
     │  NO AUTHENTICATION!   │
     └───────────────────────┘
 
-🔴 VIOLATIONS ALLOWED: 9/12 (75%)
-❌ Public cluster, public SQL, public storage (allUsers)
+🔴 VIOLATIONS ALLOWED: 8/12 (67%)
+❌ Public cluster, public SQL
 ❌ No CMEK anywhere
 ❌ No authentication, no mTLS
-❌ Using default SA (not Workload Identity)
 ❌ No audit logging, no vulnerability scanning
 
-✅ VIOLATIONS PREVENTED: 3/12 (25%)
+✅ VIOLATIONS PREVENTED: 4/12 (33%)
 ✅ UBLA enforced by Assured Workloads
+✅ Public bucket IAM (allUsers) blocked
 ✅ Cannot create SA keys (org policy)
 ✅ Cannot grant Editor role (IAM restrictions)
 ```
