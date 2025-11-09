@@ -1,6 +1,6 @@
 terraform {
   backend "gcs" {
-    bucket = "REPLACE_WITH_YOUR_BUCKET_NAME" # Replace with your GCS bucket name
+    bucket = "tfstate-real-slim-shady-fedramp-high" # Replace with your GCS bucket name
     prefix = "terraform/state"               # Path within the bucket to store state
     
     # Optional: Enable encryption at rest
