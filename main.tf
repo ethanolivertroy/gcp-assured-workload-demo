@@ -217,9 +217,7 @@ resource "google_storage_bucket" "model_storage" {
 
   # VIOLATION: Uniform bucket-level access disabled (allows ACLs)
   # NIST AC-3: Requires consistent access controls
-  uniform_bucket_level_access {
-    enabled = false
-  }
+  uniform_bucket_level_access = false
 
   # VIOLATION: No public access prevention
   # NIST AC-3: Requires access enforcement
