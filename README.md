@@ -104,6 +104,36 @@ Private VPC with VPC Service Controls
 - `gcloud` CLI installed and authenticated
 - Terraform >= 1.0
 - kubectl installed
+- (Optional) tfsec for security scanning
+
+## Local Development and Testing
+
+### Validate Before Committing
+
+To catch errors early, run the validation script before pushing:
+
+```bash
+chmod +x validate-terraform.sh
+./validate-terraform.sh
+```
+
+This script checks:
+1. ✅ Terraform formatting (`terraform fmt -check`)
+2. ✅ Terraform initialization (`terraform init`)
+3. ✅ Configuration validation (`terraform validate`)
+4. ✅ Security scanning with tfsec (if installed)
+
+**Install tfsec (optional but recommended):**
+```bash
+# macOS
+brew install tfsec
+
+# Linux
+curl -s https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
+
+# Windows
+choco install tfsec
+```
 
 ## Quick Start
 

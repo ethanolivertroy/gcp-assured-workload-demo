@@ -31,6 +31,9 @@ steps:
     args:
       - 'plan'
       - '-out=tfplan'
+      - '-var=project_id=$PROJECT_ID'
+      - '-var=region=us-central1'
+      - '-var=zone=us-central1-a'
       - '-var=db_password=$${DB_PASSWORD}'
     secretEnv: ['DB_PASSWORD']
     env:
