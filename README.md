@@ -222,14 +222,17 @@ psql -h $SQL_IP -U demo-user -d demo-db  # Accessible from anywhere!
 ```
 .
 ├── README.md                    # This file
+├── VERTEX_AI_GUARDRAILS.md      # Vertex AI guard rails in Assured Workloads
+├── ASSESSMENT.md                # Compliance assessment and control gap analysis
+├── PROGRESSION.md               # Commit-by-commit remediation tracking
+├── TESTS.md                     # Compliance validation tests
 ├── backend.tf                   # Terraform remote state config (GCS)
 ├── providers.tf                 # Terraform provider configuration
 ├── variables.tf                 # Input variables (project_id, region, db_password)
 ├── outputs.tf                   # Output values (cluster, SQL, storage)
 ├── main.tf                      # All infrastructure (Commit 1: non-compliant)
 ├── cloudbuild.yaml              # CI/CD pipeline configuration
-├── .gitignore                   # Excludes .tfstate, .tfvars, secrets
-└── blog.md                      # Detailed writeup (local only, not committed)
+└── .gitignore                   # Excludes .tfstate, .tfvars, secrets
 ```
 
 ## Demonstration Flow
@@ -265,12 +268,36 @@ psql -h $SQL_IP -U demo-user -d demo-db  # Accessible from anywhere!
 4. **Defense in Depth Required**: Layer multiple controls (CMEK + VPC-SC + Network Policies + mTLS)
 5. **Automation is Essential**: Use IaC (Terraform) + Policy-as-Code (OPA/Gatekeeper) + continuous monitoring
 
+## Additional Topics
+
+### Vertex AI in Assured Workloads
+
+For information about Vertex AI guard rails and compliance requirements in Assured Workloads, see **[VERTEX_AI_GUARDRAILS.md](VERTEX_AI_GUARDRAILS.md)**.
+
+This document covers:
+- What Assured Workloads enforces for Vertex AI (and what it doesn't)
+- CMEK requirements for models, datasets, and endpoints
+- Private networking and VPC Service Controls for AI workloads
+- Model governance and access control policies
+- AI-specific security risks (prompt injection, model inversion, etc.)
+- NIST 800-53 control mappings for AI/ML workloads
+- Validation commands and compliance checklists
+
 ## Resources
 
+### Compliance & Security
 - [Google Assured Workloads Documentation](https://cloud.google.com/assured-workloads/docs)
 - [FedRAMP High Baseline](https://www.fedramp.gov/documents/)
 - [NIST 800-53 Rev 5](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r5.pdf)
 - [DoD Cloud Computing SRG](https://dl.dod.cyber.mil/wp-content/uploads/cloud/SRG/index.html)
+
+### Vertex AI Specific
+- [Vertex AI FedRAMP High Documentation](https://cloud.google.com/vertex-ai/docs/fedramp)
+- [Vertex AI Security Best Practices](https://cloud.google.com/vertex-ai/docs/general/security)
+- [Organization Policy Constraints for Vertex AI](https://cloud.google.com/vertex-ai/docs/training/custom-constraints)
+- [Security Command Center for Vertex AI](https://cloud.google.com/blog/products/identity-security/introducing-security-command-center-protection-for-vertex-ai)
+
+### Demo Application
 - [llama.cpp GitHub](https://github.com/ggml-org/llama.cpp)
 
 ## License
