@@ -1,0 +1,4 @@
+project_id  = "your-project-id"
+region      = "us-central1"
+zone        = "us-central1-a"
+# db_password is sensitive — pass via TF_VAR_db_password or Secret Manager
